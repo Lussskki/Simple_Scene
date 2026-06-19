@@ -1,5 +1,5 @@
 {
-  "compiler": "g++",
+  "compiler": "C:/msys64/ucrt64/bin/g++.exe",
   "cppStandard": "c++17",
   "libs": [
     "opengl",

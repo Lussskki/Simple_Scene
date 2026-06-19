@@ -4,7 +4,12 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "g++ -std=c++17 src/*.cpp -Iinclude -Llib -lglfw3 -lopengl32 -lgdi32 -lopengl32 -o scene.exe",
+      "command": "C:/msys64/ucrt64/bin/g++.exe -std=c++17 src/*.cpp src/glad.c -Iinclude -Llib -lglfw3 -lopengl32 -lgdi32 -o scene.exe",
+      "options": {
+        "env": {
+          "PATH": "C:/msys64/ucrt64/bin;${env:PATH}"
+        }
+      },
       "group": {
         "kind": "build",
         "isDefault": true

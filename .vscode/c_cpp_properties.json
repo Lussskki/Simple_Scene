@@ -8,7 +8,11 @@
         "${workspaceFolder}/**"
       ],
       "defines": [],
-      "compilerPath": "g++",
+      // Set full path to your g++ executable. Common locations:
+      // - MSYS2: C:/msys64/ucrt64/bin/g++.exe
+      // - MinGW: C:/MinGW/bin/g++.exe
+      // Update the path below to match your installation if needed.
+      "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
       "cStandard": "c11",
       "cppStandard": "c++17",
       "intelliSenseMode": "gcc-x64"
