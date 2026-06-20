@@ -17,6 +17,7 @@ Main project files:
 
 ```text
 src/main.cpp            Window setup, camera input, scene setup, render loop
+src/camera.cpp          Camera state, mouse look, keyboard movement, view matrix
 src/shader.cpp          Shader file loading, shader compilation, shader program linking
 src/texture.cpp         Image texture loading and solid color texture creation
 src/mesh.cpp            VAO/VBO/EBO creation, mesh drawing, mesh cleanup, ground mesh creation
@@ -30,6 +31,7 @@ include/engine/shader.h
 include/engine/texture.h
 include/engine/mesh.h
 include/engine/model.h
+include/engine/camera.h
 ```
 
 ## Build
@@ -55,7 +57,7 @@ scene.exe
 Equivalent manual command:
 
 ```bat
-C:\msys64\ucrt64\bin\g++.exe -std=c++17 src\glad.c src\main.cpp src\mesh.cpp src\model.cpp src\shader.cpp src\texture.cpp src\tinyobjloader_impl.cpp -Iinclude -Llib -lglfw3 -lgdi32 -lopengl32 -o scene.exe
+C:\msys64\ucrt64\bin\g++.exe -std=c++17 src\glad.c src\main.cpp src\camera.cpp src\mesh.cpp src\model.cpp src\shader.cpp src\texture.cpp src\tinyobjloader_impl.cpp -Iinclude -Llib -lglfw3 -lgdi32 -lopengl32 -o scene.exe
 ```
 
 VS Code build settings are also stored in:
@@ -86,16 +88,17 @@ The scene is created in `src/main.cpp`:
 
 1. Initialize GLFW and GLAD.
 2. Enable depth testing.
-3. Load the cottage OBJ model with `loadObjModel`.
-4. Create GPU mesh data with `createMesh`.
-5. Create the ground surface with `createGroundMesh`.
-6. Load the cottage texture with `loadTextureFromFile`.
-7. Create the ground texture with `createSolidColorTexture`.
-8. Create the shader program with `createShaderProgram`.
-9. Build model, view, and projection matrices.
-10. Draw the ground mesh.
-11. Draw the cottage mesh.
-12. Clean up meshes, textures, shader program, and the GLFW window.
+3. Initialize the camera and connect mouse input.
+4. Load the cottage OBJ model with `loadObjModel`.
+5. Create GPU mesh data with `createMesh`.
+6. Create the ground surface with `createGroundMesh`.
+7. Load the cottage texture with `loadTextureFromFile`.
+8. Create the ground texture with `createSolidColorTexture`.
+9. Create the shader program with `createShaderProgram`.
+10. Build model, view, and projection matrices.
+11. Draw the ground mesh.
+12. Draw the cottage mesh.
+13. Clean up meshes, textures, shader program, and the GLFW window.
 
 ## Adding A New Model
 
@@ -148,7 +151,7 @@ glDeleteTextures(1, &treeTexture);
 
 ## Notes
 
-- Vertex layout is currently `x, y, z, u, v`.
+- Vertex layout is currently `x, y, z, nx, ny, nz, u, v`.
 - The shader uses one diffuse texture sampler named `texture_diffuse`.
 - `model.cpp` calculates model bounds, center, and scale after loading OBJ data.
-- `mesh.cpp` assumes each vertex has 5 floats: 3 for position and 2 for UV.
+- `mesh.cpp` assumes each vertex has 8 floats: 3 for position, 3 for normal, and 2 for UV.

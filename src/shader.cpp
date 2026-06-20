@@ -1,4 +1,4 @@
-#include "engine/Shader.h"
+#include "engine/shader.h"
 
 #include <fstream>
 #include <iostream>

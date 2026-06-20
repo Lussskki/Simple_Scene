@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "engine/camera.h"
 #include "engine/shader.h"
 #include "engine/texture.h"
 #include "engine/mesh.h"
@@ -15,68 +16,10 @@
 const unsigned int WIDTH = 1000;
 const unsigned int HEIGHT = 800;
 
-glm::vec3 cameraPos(0.0f, 0.35f, 4.0f);
-glm::vec3 cameraFront(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);
-
-float yaw = -90.0f;
-float pitch = 0.0f;
-float lastMouseX = WIDTH * 0.5f;
-float lastMouseY = HEIGHT * 0.5f;
-bool firstMouse = true;
-
+// GLFW framebuffer size callback
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    if (firstMouse) {
-        lastMouseX = static_cast<float>(xpos);
-        lastMouseY = static_cast<float>(ypos);
-        firstMouse = false;
-    }
-
-    float xoffset = static_cast<float>(xpos) - lastMouseX;
-    float yoffset = lastMouseY - static_cast<float>(ypos);
-    lastMouseX = static_cast<float>(xpos);
-    lastMouseY = static_cast<float>(ypos);
-
-    const float sensitivity = 0.12f;
-    yaw += xoffset * sensitivity;
-    pitch += yoffset * sensitivity;
-    pitch = glm::clamp(pitch, -75.0f, 75.0f);
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
-}
-
-void processInput(GLFWwindow* window, float deltaTime) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    const float moveSpeed = 2.0f * deltaTime;
-    glm::vec3 flatFront(cameraFront.x, 0.0f, cameraFront.z);
-    if (glm::length(flatFront) > 0.001f) {
-        flatFront = glm::normalize(flatFront);
-    }
-
-    glm::vec3 flatRight = glm::normalize(glm::cross(flatFront, cameraUp));
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cameraPos += flatFront * moveSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cameraPos -= flatFront * moveSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cameraPos -= flatRight * moveSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cameraPos += flatRight * moveSpeed;
-
-    cameraPos.x = glm::clamp(cameraPos.x, -14.5f, 14.5f);
-    cameraPos.z = glm::clamp(cameraPos.z, -14.5f, 14.5f);
-    cameraPos.y = 0.35f;
-}
-
-
 
 // GLFW error callback
 void glfw_error_callback(int error, const char* description) {
@@ -94,8 +37,9 @@ int main() {
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Textured OBJ Viewer", nullptr, nullptr);
     if(!window){ glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
+    initializeCamera(static_cast<float>(WIDTH), static_cast<float>(HEIGHT));
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetCursorPosCallback(window, handleCameraMouse);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){ std::cerr<<"Failed GLAD\n"; return -1; }
@@ -111,17 +55,20 @@ int main() {
     }
 
     Mesh cottageMesh = createMesh(cottage.vertices, cottage.indices);
+    Mesh sphereMesh = createSphereMesh(0.5f, 32, 16);
     Mesh groundMesh = createGroundMesh();
 
     GLuint cottageTexture = loadTextureFromFile("assets/Cottage_Clean/Cottage_Clean_Base_Color.png");
     if (!cottageTexture) {
         destroyMesh(cottageMesh);
+        destroyMesh(sphereMesh);
         destroyMesh(groundMesh);
         glfwDestroyWindow(window);
         glfwTerminate();
         return -1;
     }
     GLuint groundTexture = createSolidColorTexture(70, 125, 58, 255);
+    GLuint sunTexture = createSolidColorTexture(255, 220, 60, 255);
 
     // --- Load shaders from files ---
     GLuint shaderProgram = createShaderProgram(
@@ -134,6 +81,9 @@ int main() {
     modelMat = glm::scale(modelMat, glm::vec3(cottage.scale));
     modelMat = glm::translate(modelMat, glm::vec3(-cottage.center.x, -cottage.minBounds.y, -cottage.center.z));
 
+    glm::vec3 sunPosition(4.0f, 8.0f, 10.0f);
+    glm::vec3 lightDirection = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - sunPosition);
+
     float lastFrame = 0.0f;
 
     // Render loop 
@@ -141,13 +91,13 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        processInput(window, deltaTime);
+        processCameraInput(window, deltaTime);
 
         int framebufferWidth, framebufferHeight;
         glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
         float aspect = framebufferHeight > 0 ? (float)framebufferWidth / framebufferHeight : (float)WIDTH / HEIGHT;
 
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = getCameraViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.03f, 60.0f);
 
         glClearColor(0.55f,0.72f,0.92f,1.0f);
@@ -156,6 +106,9 @@ int main() {
         glUseProgram(shaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram,"view"),1,GL_FALSE,glm::value_ptr(view));
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram,"projection"),1,GL_FALSE,glm::value_ptr(projection));
+        glUniform3fv(glGetUniformLocation(shaderProgram,"lightDirection"), 1, glm::value_ptr(lightDirection));
+        glUniform3f(glGetUniformLocation(shaderProgram,"lightColor"), 1.0f, 0.96f, 0.86f);
+        glUniform1f(glGetUniformLocation(shaderProgram,"ambientStrength"), 0.45f);
 
         glActiveTexture(GL_TEXTURE0);
         glUniform1i(glGetUniformLocation(shaderProgram,"texture_diffuse"),0);
@@ -169,6 +122,14 @@ int main() {
         glBindTexture(GL_TEXTURE_2D,cottageTexture);
         drawMesh(cottageMesh);
 
+        glm::mat4 sunModel = glm::mat4(1.0f);
+        sunModel = glm::translate(sunModel, sunPosition);
+        sunModel = glm::scale(sunModel, glm::vec3(1.0f, 1.0f, 1.0f));
+        glUniform1f(glGetUniformLocation(shaderProgram,"ambientStrength"), 1.0f);
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram,"model"),1,GL_FALSE,glm::value_ptr(sunModel));
+        glBindTexture(GL_TEXTURE_2D,sunTexture);
+        drawMesh(sphereMesh);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -176,9 +137,11 @@ int main() {
     // --- Cleanup ---
     destroyMesh(cottageMesh);
     destroyMesh(groundMesh);
+    destroyMesh(sphereMesh);
     glDeleteProgram(shaderProgram);
     glDeleteTextures(1,&cottageTexture);
     glDeleteTextures(1,&groundTexture);
+    glDeleteTextures(1,&sunTexture);
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

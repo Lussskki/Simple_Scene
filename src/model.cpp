@@ -1,4 +1,4 @@
-#include "engine/Model.h"
+#include "engine/model.h"
 
 #include "tinyobjloader/tiny_obj_loader.h"
 
@@ -10,11 +10,12 @@
 
 struct ObjVertex {
     glm::vec3 pos;
+    glm::vec3 normal;
     glm::vec2 uv;
 
     bool operator<(const ObjVertex& other) const {
-        return std::tie(pos.x, pos.y, pos.z, uv.x, uv.y) <
-               std::tie(other.pos.x, other.pos.y, other.pos.z, other.uv.x, other.uv.y);
+        return std::tie(pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, uv.x, uv.y) <
+               std::tie(other.pos.x, other.pos.y, other.pos.z, other.normal.x, other.normal.y, other.normal.z, other.uv.x, other.uv.y);
     }
 };
 
@@ -50,12 +51,22 @@ LoadedModel loadObjModel(const std::string& objPath, const std::string& material
                 uv.y = 1.0f - attrib.texcoords[2 * ind.texcoord_index + 1];
             }
 
-            ObjVertex vertex{ position, uv };
+            glm::vec3 normal(0.0f, 1.0f, 0.0f);
+            if (ind.normal_index >= 0) {
+                normal.x = attrib.normals[3 * ind.normal_index + 0];
+                normal.y = attrib.normals[3 * ind.normal_index + 1];
+                normal.z = attrib.normals[3 * ind.normal_index + 2];
+            }
+
+            ObjVertex vertex{ position, normal, uv };
             if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<unsigned int>(model.vertices.size() / 5);
+                uniqueVertices[vertex] = static_cast<unsigned int>(model.vertices.size() / 8);
                 model.vertices.push_back(position.x);
                 model.vertices.push_back(position.y);
                 model.vertices.push_back(position.z);
+                model.vertices.push_back(normal.x);
+                model.vertices.push_back(normal.y);
+                model.vertices.push_back(normal.z);
                 model.vertices.push_back(uv.x);
                 model.vertices.push_back(uv.y);
             }
@@ -64,13 +75,13 @@ LoadedModel loadObjModel(const std::string& objPath, const std::string& material
         }
     }
 
-    std::cout << "Loaded vertices: " << model.vertices.size() / 5
+    std::cout << "Loaded vertices: " << model.vertices.size() / 8
               << ", indices: " << model.indices.size() << "\n";
 
     model.minBounds = glm::vec3(FLT_MAX);
     model.maxBounds = glm::vec3(-FLT_MAX);
 
-    for (size_t i = 0; i < model.vertices.size(); i += 5) {
+    for (size_t i = 0; i < model.vertices.size(); i += 8) {
         model.minBounds.x = std::min(model.minBounds.x, model.vertices[i + 0]);
         model.minBounds.y = std::min(model.minBounds.y, model.vertices[i + 1]);
         model.minBounds.z = std::min(model.minBounds.z, model.vertices[i + 2]);

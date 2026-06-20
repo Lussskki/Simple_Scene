@@ -13,5 +13,6 @@ struct Mesh {
 
 Mesh createMesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 Mesh createGroundMesh();
+Mesh createSphereMesh(float radius, unsigned int sectorCount, unsigned int stackCount);
 void drawMesh(const Mesh& mesh);
 void destroyMesh(Mesh& mesh);
