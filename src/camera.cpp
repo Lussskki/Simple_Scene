@@ -1,6 +1,7 @@
 #include "engine/camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 
 namespace {
     glm::vec3 cameraPos(0.0f, 0.35f, 4.0f);
@@ -44,6 +45,12 @@ void handleCameraMouse(GLFWwindow* window, double xpos, double ypos) {
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(direction);
+    
+    // Debug
+    static int frameCount = 0;
+    if (frameCount++ % 30 == 0) {
+        std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << "\n";
+    }
 }
 
 void processCameraInput(GLFWwindow* window, float deltaTime) {
@@ -71,4 +78,16 @@ void processCameraInput(GLFWwindow* window, float deltaTime) {
 
 glm::mat4 getCameraViewMatrix() {
     return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+}
+
+glm::vec3 getCameraPosition() {
+    return cameraPos;
+}
+
+glm::vec3 getCameraFront() {
+    return cameraFront;
+}
+
+glm::vec3 getCameraRight() {
+    return glm::normalize(glm::cross(cameraFront, cameraUp));
 }

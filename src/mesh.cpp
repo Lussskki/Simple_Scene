@@ -86,6 +86,19 @@ Mesh createSphereMesh(float radius, unsigned int sectorCount, unsigned int stack
     return createMesh(vertices, indices);
 }
 
+Mesh createWallMesh(float width, float height, float depth)
+{
+    std::vector<float> wallVertices = {
+        -width/2, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+         width/2, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+         width/2, height, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -width/2, height, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f
+    };
+    std::vector<unsigned int> wallIndices = { 0, 1, 2, 2, 3, 0 };
+    
+    return createMesh(wallVertices, wallIndices);
+}
+
 void drawMesh(const Mesh& mesh) {
     glBindVertexArray(mesh.VAO);
     glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);

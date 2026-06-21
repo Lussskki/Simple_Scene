@@ -1,11 +1,12 @@
 # Simple Scene
 
-A small OpenGL scene that loads a textured cottage OBJ model, draws a simple ground surface, and uses a first-person style camera.
+A small OpenGL scene that loads a textured cottage OBJ model, draws a ground surface, renders a first-person flashlight model, and uses mouse-look camera controls with a spotlight.
 
 ## Project Structure
 
 ```text
-assets/                 Model and texture assets
+assets/Cottage/         Cottage OBJ, MTL, and texture files
+assets/Flashlight/      Flashlight OBJ, MTL, and texture files
 include/                Third-party headers and project headers
 include/engine/         Project engine-style headers
 lib/                    Linked libraries
@@ -20,7 +21,7 @@ src/main.cpp            Window setup, camera input, scene setup, render loop
 src/camera.cpp          Camera state, mouse look, keyboard movement, view matrix
 src/shader.cpp          Shader file loading, shader compilation, shader program linking
 src/texture.cpp         Image texture loading and solid color texture creation
-src/mesh.cpp            VAO/VBO/EBO creation, mesh drawing, mesh cleanup, ground mesh creation
+src/mesh.cpp            VAO/VBO/EBO creation, mesh drawing, mesh cleanup, ground/sphere/wall mesh creation
 src/model.cpp           OBJ loading, vertex/index extraction, bounds/center/scale calculation
 ```
 
@@ -82,6 +83,18 @@ Mouse           Look around
 Esc             Close window
 ```
 
+## Current Features
+
+```text
+Textured cottage loaded from assets/Cottage/
+Textured flashlight loaded from assets/Flashlight/
+Flashlight model follows the camera position and mouse rotation
+Spotlight direction follows the camera front vector
+Directional sunlight plus ambient lighting
+Generated ground, sun sphere, and dark wall mesh
+Scene shaders renamed to scene_shader.vert and scene_shader.frag
+```
+
 ## Current Scene Flow
 
 The scene is created in `src/main.cpp`:
@@ -89,16 +102,18 @@ The scene is created in `src/main.cpp`:
 1. Initialize GLFW and GLAD.
 2. Enable depth testing.
 3. Initialize the camera and connect mouse input.
-4. Load the cottage OBJ model with `loadObjModel`.
-5. Create GPU mesh data with `createMesh`.
-6. Create the ground surface with `createGroundMesh`.
-7. Load the cottage texture with `loadTextureFromFile`.
-8. Create the ground texture with `createSolidColorTexture`.
-9. Create the shader program with `createShaderProgram`.
-10. Build model, view, and projection matrices.
-11. Draw the ground mesh.
-12. Draw the cottage mesh.
-13. Clean up meshes, textures, shader program, and the GLFW window.
+4. Load the cottage OBJ from `assets/Cottage/`.
+5. Load the flashlight OBJ from `assets/Flashlight/`.
+6. Create GPU mesh data with `createMesh`.
+7. Create generated meshes for the ground, sun sphere, and wall.
+8. Load cottage and flashlight textures.
+9. Create solid color textures for the ground, sun, and wall.
+10. Create the shader program from `scene_shader.vert` and `scene_shader.frag`.
+11. Build model, view, and projection matrices.
+12. Update the flashlight position and rotation from the camera vectors.
+13. Send directional light and spotlight uniforms to the shader.
+14. Draw the ground, cottage, flashlight, wall, and sun.
+15. Clean up meshes, textures, shader program, and the GLFW window.
 
 ## Adding A New Model
 
@@ -153,5 +168,6 @@ glDeleteTextures(1, &treeTexture);
 
 - Vertex layout is currently `x, y, z, nx, ny, nz, u, v`.
 - The shader uses one diffuse texture sampler named `texture_diffuse`.
+- The fragment shader combines ambient, directional, and flashlight spotlight lighting.
 - `model.cpp` calculates model bounds, center, and scale after loading OBJ data.
 - `mesh.cpp` assumes each vertex has 8 floats: 3 for position, 3 for normal, and 2 for UV.

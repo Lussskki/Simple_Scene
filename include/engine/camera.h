@@ -6,4 +6,8 @@
 void initializeCamera(float viewportWidth, float viewportHeight);
 void handleCameraMouse(GLFWwindow* window, double xpos, double ypos);
 void processCameraInput(GLFWwindow* window, float deltaTime);
+
 glm::mat4 getCameraViewMatrix();
+glm::vec3 getCameraPosition();
+glm::vec3 getCameraFront();
+glm::vec3 getCameraRight();
